@@ -278,9 +278,11 @@ export function useSynth() {
     }
     const now = ctx.currentTime;
     const amp = ctx.createGain();
+    // Keep the per-voice envelope conservative: the voice bus also has to
+    // leave room for polyphony and the parallel FX returns.
     amp.gain.setValueAtTime(0.0001, now);
-    amp.gain.exponentialRampToValueAtTime(Math.max(0.015, 0.5 * velocity), now + 0.006);
-    amp.gain.exponentialRampToValueAtTime(0.18 * velocity, now + 0.16);
+    amp.gain.exponentialRampToValueAtTime(Math.max(0.01, 0.22 * velocity), now + 0.006);
+    amp.gain.exponentialRampToValueAtTime(0.075 * velocity, now + 0.16);
     const current = paramsRef.current;
     let node: AudioNode;
     let source: AudioBufferSourceNode | OscillatorNode | undefined;
@@ -367,13 +369,18 @@ export function useSynth() {
       ctxRef.current = ctx;
       const resumePromise = ctx.state === "suspended" ? ctx.resume() : Promise.resolve();
       const master = ctx.createGain();
-      master.gain.value = 0.72;
+      master.gain.value = 0.8;
+      const busCompressor = ctx.createDynamicsCompressor();
+      busCompressor.threshold.value = -10; busCompressor.knee.value = 8; busCompressor.ratio.value = 8; busCompressor.attack.value = 0.003; busCompressor.release.value = 0.15;
       const limiter = ctx.createDynamicsCompressor();
-      limiter.threshold.value = -3; limiter.knee.value = 4; limiter.ratio.value = 20; limiter.attack.value = 0.003; limiter.release.value = 0.12;
+      limiter.threshold.value = -1; limiter.knee.value = 3; limiter.ratio.value = 20; limiter.attack.value = 0.001; limiter.release.value = 0.1;
+      const voiceBus = ctx.createGain();
+      voiceBus.gain.value = 0.48;
       const dry = ctx.createGain();
       const analyser = ctx.createAnalyser(); analyser.fftSize = 256;
       const delay = ctx.createDelay(1), delayFeedback = ctx.createGain(), delayWet = ctx.createGain();
       delay.delayTime.value = 0.29; delayFeedback.gain.value = 0.28;
+      voiceBus.connect(dry);
       dry.connect(delay); delay.connect(delayFeedback).connect(delay); delay.connect(delayWet).connect(master);
       const convolver = ctx.createConvolver();
       const impulse = ctx.createBuffer(2, Math.floor(ctx.sampleRate * 1.8), ctx.sampleRate);
@@ -386,8 +393,8 @@ export function useSynth() {
       const chorus = ctx.createDelay(0.05), lfo = ctx.createOscillator(), lfoGain = ctx.createGain();
       chorus.delayTime.value = 0.018; lfo.frequency.value = 0.27; lfoGain.gain.value = 0.0045; lfo.connect(lfoGain).connect(chorus.delayTime); lfo.start();
       const chorusWet = ctx.createGain(); dry.connect(chorus).connect(chorusWet).connect(master);
-      dry.connect(master); master.connect(limiter).connect(analyser).connect(ctx.destination);
-      dryRef.current = dry; analyserRef.current = analyser; delayWetRef.current = delayWet; spaceWetRef.current = spaceWet; chorusWetRef.current = chorusWet;
+      dry.connect(master); master.connect(busCompressor).connect(limiter).connect(analyser).connect(ctx.destination);
+      dryRef.current = voiceBus; analyserRef.current = analyser; delayWetRef.current = delayWet; spaceWetRef.current = spaceWet; chorusWetRef.current = chorusWet;
       delayWet.gain.value = fx.delay; spaceWet.gain.value = fx.space; chorusWet.gain.value = fx.chorus;
       await resumePromise;
       startedRef.current = true; setStarted(true); setAudioError("");
