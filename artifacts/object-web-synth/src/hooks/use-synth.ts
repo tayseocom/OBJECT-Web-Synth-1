@@ -448,14 +448,16 @@ export function useSynth() {
       // Three-stage output protection: gentle bus compression, peak limiting,
       // then a bounded soft ceiling for stacked voices and FX returns.
       const busCompressor = ctx.createDynamicsCompressor();
-      busCompressor.threshold.value = -18; busCompressor.knee.value = 12; busCompressor.ratio.value = 3; busCompressor.attack.value = 0.01; busCompressor.release.value = 0.14;
+      // Keep the glue stage from pumping at note rate. It should only smooth
+      // unusually dense chords; peak control happens in the stage below.
+      busCompressor.threshold.value = -12; busCompressor.knee.value = 24; busCompressor.ratio.value = 1.5; busCompressor.attack.value = 0.02; busCompressor.release.value = 0.28;
       const limiter = ctx.createDynamicsCompressor();
-      limiter.threshold.value = -4; limiter.knee.value = 5; limiter.ratio.value = 20; limiter.attack.value = 0.001; limiter.release.value = 0.12;
+      limiter.threshold.value = -2; limiter.knee.value = 6; limiter.ratio.value = 12; limiter.attack.value = 0.001; limiter.release.value = 0.2;
       const safetyClip = ctx.createWaveShaper();
       const clipCurve = new Float32Array(2048);
       for (let i = 0; i < clipCurve.length; i += 1) {
         const x = (i / (clipCurve.length - 1)) * 2 - 1;
-        clipCurve[i] = Math.tanh(x * 1.35) / Math.tanh(1.35);
+        clipCurve[i] = Math.tanh(x * 1.08) / Math.tanh(1.08);
       }
       safetyClip.curve = clipCurve;
       safetyClip.oversample = "4x";
