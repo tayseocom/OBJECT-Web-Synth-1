@@ -281,7 +281,8 @@ export function useSynth() {
     const type = selectionsRef.current.exciter;
     const gain = ctx.createGain();
     const filter = ctx.createBiquadFilter();
-    gain.gain.value = 0.35 * velocity * (0.75 + pressureRef.current * 0.4);
+    const pressure = pressureRef.current;
+    gain.gain.value = 0.26 * velocity * (0.75 + pressure * 0.35);
     if (type === "pulse") {
       const oscillator = ctx.createOscillator();
       oscillator.type = "sawtooth";
@@ -293,12 +294,26 @@ export function useSynth() {
       oscillator.stop(now + 0.07);
       return oscillator;
     }
+    if (type === "reed") {
+      const oscillator = ctx.createOscillator();
+      oscillator.type = "triangle";
+      oscillator.frequency.setValueAtTime(frequency, now);
+      oscillator.detune.setValueAtTime(-8 + pressure * 16, now);
+      gain.gain.setValueAtTime(0.12 * velocity, now);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.24);
+      oscillator.connect(gain).connect(input);
+      oscillator.start();
+      oscillator.stop(now + 0.28);
+      return oscillator;
+    }
     const source = ctx.createBufferSource();
-    const seconds = type === "breath" ? 0.38 : type === "noise" ? 0.18 : type === "hammer" ? 0.025 : 0.075;
-    source.buffer = noiseBuffer(seconds, type === "hammer" ? 5 : 2);
-    filter.type = type === "breath" ? "bandpass" : type === "pluck" ? "highpass" : "bandpass";
-    filter.frequency.value = type === "breath" ? 1350 : type === "pluck" ? 650 : type === "hammer" ? 3200 : 1900;
-    filter.Q.value = type === "breath" ? 1.2 : 0.7;
+    const seconds = type === "bow" ? 0.72 : type === "breath" ? 0.38 : type === "noise" ? 0.18 : type === "contact" ? 0.035 : type === "drip" ? 0.12 : type === "hammer" ? 0.025 : 0.075;
+    source.buffer = noiseBuffer(seconds, type === "bow" ? 0.7 : type === "hammer" ? 5 : type === "contact" ? 4 : 2);
+    filter.type = type === "breath" || type === "drip" ? "bandpass" : type === "pluck" || type === "contact" ? "highpass" : type === "bow" ? "lowpass" : "bandpass";
+    filter.frequency.value = type === "bow" ? 920 : type === "breath" ? 1350 : type === "pluck" ? 650 : type === "contact" ? 2800 : type === "drip" ? 2250 : type === "hammer" ? 3200 : 1900;
+    filter.Q.value = type === "breath" ? 1.2 : type === "bow" ? 0.8 : type === "drip" ? 2.5 : 0.7;
+    if (type === "bow") gain.gain.value *= 0.68;
+    if (type === "contact") gain.gain.value *= 0.78;
     source.connect(filter).connect(gain).connect(input);
     source.start();
     return source;

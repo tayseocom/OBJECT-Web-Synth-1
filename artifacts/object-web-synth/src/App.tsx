@@ -4,7 +4,17 @@ import { useSynth, type SynthParams } from "@/hooks/use-synth";
 import "./index.css";
 
 const options = {
-  exciter: [["pluck", "Guitar Scrape"], ["breath", "Breath"], ["noise", "Noise Burst"], ["pulse", "Pulse"], ["hammer", "Hammer"]],
+  exciter: [
+    ["pluck", "Guitar Scrape"],
+    ["bow", "Rosin Bow"],
+    ["breath", "Breath"],
+    ["reed", "Reed Buzz"],
+    ["noise", "Noise Burst"],
+    ["contact", "Contact Tick"],
+    ["drip", "Water Drop"],
+    ["pulse", "Pulse"],
+    ["hammer", "Hammer"],
+  ],
   body: [["string", "STRING"], ["tube", "TUBE"], ["plate", "PLATE"], ["membrane", "MEMBRANE"]],
 };
 
