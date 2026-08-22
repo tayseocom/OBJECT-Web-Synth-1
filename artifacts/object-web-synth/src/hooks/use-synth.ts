@@ -121,7 +121,7 @@ export const BUILT_IN_PRESETS: BuiltInPreset[] = [
 const WORKLET_SOURCE = `
 class FD{constructor(n=96000){this.b=new Float32Array(n);this.w=0;this.n=n}read(d){let p=this.w-d;while(p<0)p+=this.n;let i=Math.floor(p),f=p-i,im1=(i-1+this.n)%this.n,i1=(i+1)%this.n,i2=(i+2)%this.n,y0=this.b[im1],y1=this.b[i],y2=this.b[i1],y3=this.b[i2],a0=-.5*y0+1.5*y1-1.5*y2+.5*y3,a1=y0-2.5*y1+2*y2-.5*y3,a2=-.5*y0+.5*y2,a3=y1;return((a0*f+a1)*f+a2)*f+a3}write(x){this.b[this.w]=x;this.w=(this.w+1)%this.n}}
 class Modal{constructor(sr,type){this.sr=sr;this.type=type;this.y=new Float32Array(8);this.y1=new Float32Array(8)}process(x,f,damp,pos){let ratios=this.type==='plate'?[1,1.59,2.14,2.92,3.76,4.68,5.7,6.8]:[1,1.48,2.01,2.63,3.31,4.12,5.05,6.1],o=0;for(let k=0;k<ratios.length;k++){let hz=Math.min(this.sr*.44,f*ratios[k]),r=Math.exp(-Math.PI*hz/(this.sr*(10+(1-damp)*55))),c=2*r*Math.cos(2*Math.PI*hz/this.sr),spatial=Math.sin(Math.PI*(k+1)*Math.max(.03,Math.min(.97,pos))),yn=x*spatial+c*this.y[k]-r*r*this.y1[k];this.y1[k]=this.y[k];this.y[k]=yn;o+=yn*(.38/(1+k*.7))}return o}}
-class ObjectVoice extends AudioWorkletProcessor{static get parameterDescriptors(){return['frequency','strike','pickup','coupling','damping','tracking','spread','edge','gate','body2mix'].map(name=>({name,defaultValue:name==='frequency'?220:name==='strike'?.24:name==='pickup'?.76:name==='coupling'?.57:name==='damping'?.31:name==='tracking'?1:name==='spread'?.18:name==='edge'?.12:name==='gate'?1:0,minValue:name==='frequency'?20:0,maxValue:name==='frequency'?18000:1,automationRate:name==='frequency'?'a-rate':'k-rate'}))}constructor(o){super();this.type=o.processorOptions.body1;this.type2=o.processorOptions.body2||'plate';this.d1=new FD;this.d2=new FD;this.lp1=0;this.lp2=0;this.m1=new Modal(sampleRate,this.type);this.m2=new Modal(sampleRate,this.type2);this.lastL=0}wv(d,x,delay,damp,edge,which){let y=d.read(delay);if(which===1){this.lp1+=(y-this.lp1)*(.05+.65*(1-damp));y=this.lp1}else{this.lp2+=(y-this.lp2)*(.05+.65*(1-damp));y=this.lp2}y=Math.tanh(y*(1+edge*2.8))/(1+edge*.35);d.write(x+y*(.985-damp*.18));return y}process(ins,outs,p){let input=ins[0]?.[0],L=outs[0][0],R=outs[0][1]||L;for(let i=0;i<L.length;i++){let mf=p.frequency.length>1?p.frequency[i]:p.frequency[0],tracking=p.tracking[0],f=220+(mf-220)*tracking,strike=p.strike[0],pickup=p.pickup[0],couple=p.coupling[0],damp=p.damping[0],spread=p.spread[0],edge=p.edge[0],gate=p.gate[0],mix2=p.body2mix[0],x=(input?input[i]:0)*(0.7+couple*.65),delay=Math.max(2,sampleRate/f),a=0,b=0;if(this.type==='string'||this.type==='tube'){let dd=this.type==='tube'?delay*.5:delay;a=this.wv(this.d1,x,dd,damp,edge,1);let pick=this.d1.read(Math.max(1.1,dd*(.08+.84*pickup)));a-=this.d1.read(Math.max(1.1,dd*(.08+.84*strike)))*.22;a=.55*a+.7*pick}else a=this.m1.process(x,f,damp,pickup);if(mix2>.001){let feed=x+a*couple*.42;if(this.type2==='string'||this.type2==='tube')b=this.wv(this.d2,feed,this.type2==='tube'?delay*.75:delay*1.35,Math.min(.95,damp+.08),edge,2);else b=this.m2.process(feed,f*.67,Math.min(.95,damp+.05),strike);a=a*(1-mix2*.35)+b*mix2}let side=(a-this.lastL)*spread*.8;this.lastL=a;L[i]=(a+side)*.62*gate;R[i]=(a-side)*.62*gate}return true}}
+ class ObjectVoice extends AudioWorkletProcessor{static get parameterDescriptors(){return['frequency','strike','pickup','coupling','damping','tracking','spread','edge','gate','body2mix'].map(name=>({name,defaultValue:name==='frequency'?220:name==='strike'?.24:name==='pickup'?.76:name==='coupling'?.57:name==='damping'?.31:name==='tracking'?1:name==='spread'?.18:name==='edge'?.12:name==='gate'?1:0,minValue:name==='frequency'?20:0,maxValue:name==='frequency'?18000:1,automationRate:name==='frequency'?'a-rate':'k-rate'}))}constructor(o){super();this.type=o.processorOptions.body1;this.type2=o.processorOptions.body2||'plate';this.d1=new FD;this.d2=new FD;this.lp1=0;this.lp2=0;this.m1=new Modal(sampleRate,this.type);this.m2=new Modal(sampleRate,this.type2);this.lastL=0}wv(d,x,delay,damp,edge,which){let y=d.read(delay);if(which===1){this.lp1+=(y-this.lp1)*(.05+.65*(1-damp));y=this.lp1}else{this.lp2+=(y-this.lp2)*(.05+.65*(1-damp));y=this.lp2}y=Math.tanh(y*(1+edge*2.8))/(1+edge*.35);d.write(x+y*(.985-damp*.18));return y}process(ins,outs,p){let input=ins[0]?.[0],L=outs[0][0],R=outs[0][1]||L;for(let i=0;i<L.length;i++){let mf=p.frequency.length>1?p.frequency[i]:p.frequency[0],tracking=p.tracking[0],f=220+(mf-220)*tracking,strike=p.strike[0],pickup=p.pickup[0],couple=p.coupling[0],damp=p.damping[0],spread=p.spread[0],edge=p.edge[0],gate=p.gate[0],mix2=p.body2mix[0],x=(input?input[i]:0)*(0.7+couple*.65),delay=Math.max(2,sampleRate/f),a=0,b=0;if(this.type==='string'||this.type==='tube'){let dd=this.type==='tube'?delay*.5:delay;a=this.wv(this.d1,x,dd,damp,edge,1);let pick=this.d1.read(Math.max(1.1,dd*(.08+.84*pickup)));a-=this.d1.read(Math.max(1.1,dd*(.08+.84*strike)))*.22;a=.55*a+.7*pick}else a=this.m1.process(x,f,damp,pickup);if(mix2>.001){let feed=x+a*couple*.42;if(this.type2==='string'||this.type2==='tube')b=this.wv(this.d2,feed,this.type2==='tube'?delay*.75:delay*1.35,Math.min(.95,damp+.08),edge,2);else b=this.m2.process(feed,f*.67,Math.min(.95,damp+.05),strike);a=a*(1-mix2*.35)+b*mix2}let side=(a-this.lastL)*spread*.8;this.lastL=a;L[i]=Math.tanh((a+side)*.72)*.62*gate;R[i]=Math.tanh((a-side)*.72)*.62*gate}return true}}
 registerProcessor('object-voice',ObjectVoice);`;
 
 const shapes: Record<string, string> = {
@@ -333,8 +333,8 @@ export function useSynth() {
         state.write = (state.write + 1) % size;
         const sample = 0.55 * loop + 0.7 * read(Math.max(1, delay * (0.08 + 0.84 * current.pickup)));
         const side = (sample - state.low) * current.spread * 0.35;
-        left[i] = (sample + side) * 0.62;
-        right[i] = (sample - side) * 0.62;
+         left[i] = Math.tanh((sample + side) * 0.72) * 0.62;
+         right[i] = Math.tanh((sample - side) * 0.72) * 0.62;
       }
     };
     return { node, state };
@@ -444,13 +444,25 @@ export function useSynth() {
       ctxRef.current = ctx;
       const resumePromise = ctx.state === "suspended" ? ctx.resume() : Promise.resolve();
       const master = ctx.createGain();
-      master.gain.value = 0.8;
+      master.gain.value = 0.72;
+      // Three-stage output protection: gentle bus compression, peak limiting,
+      // then a bounded soft ceiling for stacked voices and FX returns.
       const busCompressor = ctx.createDynamicsCompressor();
-      busCompressor.threshold.value = -10; busCompressor.knee.value = 8; busCompressor.ratio.value = 8; busCompressor.attack.value = 0.003; busCompressor.release.value = 0.15;
+      busCompressor.threshold.value = -18; busCompressor.knee.value = 12; busCompressor.ratio.value = 3; busCompressor.attack.value = 0.01; busCompressor.release.value = 0.14;
       const limiter = ctx.createDynamicsCompressor();
-      limiter.threshold.value = -1; limiter.knee.value = 3; limiter.ratio.value = 20; limiter.attack.value = 0.001; limiter.release.value = 0.1;
+      limiter.threshold.value = -4; limiter.knee.value = 5; limiter.ratio.value = 20; limiter.attack.value = 0.001; limiter.release.value = 0.12;
+      const safetyClip = ctx.createWaveShaper();
+      const clipCurve = new Float32Array(2048);
+      for (let i = 0; i < clipCurve.length; i += 1) {
+        const x = (i / (clipCurve.length - 1)) * 2 - 1;
+        clipCurve[i] = Math.tanh(x * 1.35) / Math.tanh(1.35);
+      }
+      safetyClip.curve = clipCurve;
+      safetyClip.oversample = "4x";
+      const outputCeiling = ctx.createGain();
+      outputCeiling.gain.value = 0.76;
       const voiceBus = ctx.createGain();
-      voiceBus.gain.value = 0.48;
+      voiceBus.gain.value = 0.34;
       const dry = ctx.createGain();
       const analyser = ctx.createAnalyser(); analyser.fftSize = 256;
       const delay = ctx.createDelay(1), delayFeedback = ctx.createGain(), delayWet = ctx.createGain();
@@ -468,9 +480,9 @@ export function useSynth() {
       const chorus = ctx.createDelay(0.05), lfo = ctx.createOscillator(), lfoGain = ctx.createGain();
       chorus.delayTime.value = 0.018; lfo.frequency.value = 0.27; lfoGain.gain.value = 0.0045; lfo.connect(lfoGain).connect(chorus.delayTime); lfo.start();
       const chorusWet = ctx.createGain(); dry.connect(chorus).connect(chorusWet).connect(master);
-      dry.connect(master); master.connect(busCompressor).connect(limiter).connect(analyser).connect(ctx.destination);
+      dry.connect(master); master.connect(busCompressor).connect(limiter).connect(safetyClip).connect(outputCeiling).connect(analyser).connect(ctx.destination);
       dryRef.current = voiceBus; analyserRef.current = analyser; delayWetRef.current = delayWet; spaceWetRef.current = spaceWet; chorusWetRef.current = chorusWet;
-      delayWet.gain.value = fx.delay; spaceWet.gain.value = fx.space; chorusWet.gain.value = fx.chorus;
+      delayWet.gain.value = fx.delay * 0.55; spaceWet.gain.value = fx.space * 0.55; chorusWet.gain.value = fx.chorus * 0.55;
       await resumePromise;
       startedRef.current = true; setStarted(true); setAudioError("");
       if (ctx.audioWorklet?.addModule) {
@@ -497,9 +509,9 @@ export function useSynth() {
   }, [initializeAudio]);
 
   useEffect(() => {
-    if (chorusWetRef.current) chorusWetRef.current.gain.value = fx.chorus;
-    if (delayWetRef.current) delayWetRef.current.gain.value = fx.delay;
-    if (spaceWetRef.current) spaceWetRef.current.gain.value = fx.space;
+    if (chorusWetRef.current) chorusWetRef.current.gain.value = fx.chorus * 0.55;
+    if (delayWetRef.current) delayWetRef.current.gain.value = fx.delay * 0.55;
+    if (spaceWetRef.current) spaceWetRef.current.gain.value = fx.space * 0.55;
   }, [fx]);
 
   useEffect(() => {
