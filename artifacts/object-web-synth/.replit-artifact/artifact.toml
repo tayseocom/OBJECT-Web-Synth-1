@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "OBJECT Web Synth"
+description = "A playable browser instrument inspired by physical modelling synthesis, with resonant bodies, performance macros, MIDI, presets, and a responsive keyboard."
+version = "1.0.0"
+id = "artifacts/object-web-synth"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 26093
+
+[services.development]
+run = "pnpm --filter @workspace/object-web-synth run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/object-web-synth", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/object-web-synth/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "26093"
+BASE_PATH = "/"
