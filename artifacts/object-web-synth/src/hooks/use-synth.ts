@@ -34,6 +34,21 @@ type PresetState = SynthParams & {
   motionRate: string;
 };
 
+export type BuiltInPreset = {
+  name: string;
+  description: string;
+  params: SynthParams;
+  exciter: string;
+  body1: string;
+  body2: string;
+  body2On: boolean;
+  poly: string;
+  mode: string;
+  fx: { chorus: number; delay: number; space: number };
+  motionTarget: string;
+  motionRate: string;
+};
+
 const DEFAULT_PARAMS: SynthParams = {
   strike: 0.24,
   pickup: 0.76,
@@ -43,6 +58,65 @@ const DEFAULT_PARAMS: SynthParams = {
   spread: 0.18,
   edge: 0.12,
 };
+
+export const BUILT_IN_PRESETS: BuiltInPreset[] = [
+  {
+    name: "Glass String Dream",
+    description: "Bright, wide and quietly cinematic",
+    params: { strike: 0.24, pickup: 0.76, coupling: 0.57, damping: 0.31, tracking: 1, spread: 0.18, edge: 0.12 },
+    exciter: "pluck", body1: "string", body2: "plate", body2On: false, poly: "12", mode: "Poly",
+    fx: { chorus: 0.15, delay: 0.16, space: 0.22 }, motionTarget: "pickup", motionRate: "0.22",
+  },
+  {
+    name: "Bronze Harp",
+    description: "A delicate pluck with a long metal tail",
+    params: { strike: 0.18, pickup: 0.88, coupling: 0.35, damping: 0.14, tracking: 1, spread: 0.32, edge: 0.08 },
+    exciter: "pluck", body1: "plate", body2: "string", body2On: true, poly: "16", mode: "Poly",
+    fx: { chorus: 0.28, delay: 0.3, space: 0.42 }, motionTarget: "coupling", motionRate: "0.08",
+  },
+  {
+    name: "Velvet Plate",
+    description: "Soft impact, warm resonance, close room",
+    params: { strike: 0.1, pickup: 0.46, coupling: 0.64, damping: 0.68, tracking: 0.96, spread: 0.12, edge: 0.04 },
+    exciter: "hammer", body1: "plate", body2: "membrane", body2On: true, poly: "8", mode: "Poly",
+    fx: { chorus: 0.08, delay: 0.08, space: 0.18 }, motionTarget: "damping", motionRate: "0.08",
+  },
+  {
+    name: "Submerged Metal",
+    description: "A slow, dark bloom under deep water",
+    params: { strike: 0.34, pickup: 0.22, coupling: 0.78, damping: 0.82, tracking: 0.72, spread: 0.5, edge: 0.2 },
+    exciter: "noise", body1: "tube", body2: "plate", body2On: true, poly: "12", mode: "Poly",
+    fx: { chorus: 0.36, delay: 0.44, space: 0.56 }, motionTarget: "pickup", motionRate: "0.08",
+  },
+  {
+    name: "Air Choir",
+    description: "Breath and membrane suspended in space",
+    params: { strike: 0.42, pickup: 0.62, coupling: 0.52, damping: 0.49, tracking: 0.88, spread: 0.58, edge: 0.1 },
+    exciter: "breath", body1: "membrane", body2: "plate", body2On: true, poly: "16", mode: "Poly",
+    fx: { chorus: 0.42, delay: 0.24, space: 0.62 }, motionTarget: "coupling", motionRate: "0.22",
+  },
+  {
+    name: "Rubber Mallet",
+    description: "Short, woody knocks with a playful bounce",
+    params: { strike: 0.7, pickup: 0.3, coupling: 0.26, damping: 0.76, tracking: 1, spread: 0.08, edge: 0.32 },
+    exciter: "hammer", body1: "tube", body2: "string", body2On: false, poly: "8", mode: "Mono",
+    fx: { chorus: 0.04, delay: 0.12, space: 0.08 }, motionTarget: "strike", motionRate: "0.55",
+  },
+  {
+    name: "Frozen Membrane",
+    description: "Crystalline transients with a brittle edge",
+    params: { strike: 0.58, pickup: 0.7, coupling: 0.44, damping: 0.2, tracking: 1, spread: 0.38, edge: 0.68 },
+    exciter: "pulse", body1: "membrane", body2: "plate", body2On: true, poly: "12", mode: "Poly",
+    fx: { chorus: 0.22, delay: 0.38, space: 0.3 }, motionTarget: "coupling", motionRate: "0.22",
+  },
+  {
+    name: "Tape Echo",
+    description: "A soft pulse that melts into repeats",
+    params: { strike: 0.26, pickup: 0.52, coupling: 0.59, damping: 0.42, tracking: 0.82, spread: 0.44, edge: 0.16 },
+    exciter: "pulse", body1: "string", body2: "tube", body2On: true, poly: "12", mode: "Poly",
+    fx: { chorus: 0.18, delay: 0.58, space: 0.36 }, motionTarget: "pickup", motionRate: "0.08",
+  },
+];
 
 const WORKLET_SOURCE = `
 class FD{constructor(n=96000){this.b=new Float32Array(n);this.w=0;this.n=n}read(d){let p=this.w-d;while(p<0)p+=this.n;let i=Math.floor(p),f=p-i,im1=(i-1+this.n)%this.n,i1=(i+1)%this.n,i2=(i+2)%this.n,y0=this.b[im1],y1=this.b[i],y2=this.b[i1],y3=this.b[i2],a0=-.5*y0+1.5*y1-1.5*y2+.5*y3,a1=y0-2.5*y1+2*y2-.5*y3,a2=-.5*y0+.5*y2,a3=y1;return((a0*f+a1)*f+a2)*f+a3}write(x){this.b[this.w]=x;this.w=(this.w+1)%this.n}}
@@ -80,6 +154,7 @@ export function useSynth() {
   const [motionOn, setMotionOn] = useState(false);
   const [motionTarget, setMotionTarget] = useState("pickup");
   const [motionRate, setMotionRate] = useState("0.22");
+  const [activePreset, setActivePreset] = useState(BUILT_IN_PRESETS[0].name);
   const [exciter, setExciter] = useState("pluck");
   const [body1, setBody1] = useState("string");
   const [body2, setBody2] = useState("plate");
@@ -490,8 +565,30 @@ export function useSynth() {
   const randomise = useCallback(() => {
     (["strike", "pickup", "coupling", "damping"] as const).forEach((key) => setParam(key, 0.08 + Math.random() * 0.84));
     setParam("tracking", 0.35 + Math.random() * 0.65); setParam("spread", Math.random() * 0.55); setParam("edge", Math.random() * 0.45);
+    setActivePreset("MUTATED");
     showToast("OBJECT MUTATED");
   }, [setParam, showToast]);
+
+  const applyPreset = useCallback((preset: BuiltInPreset) => {
+    (Object.keys(DEFAULT_PARAMS) as (keyof SynthParams)[]).forEach((key) => setParam(key, preset.params[key]));
+    setExciter(preset.exciter);
+    setBody1(preset.body1);
+    setBody2(preset.body2);
+    setBody2On(preset.body2On);
+    selectionsRef.current = { exciter: preset.exciter, body1: preset.body1, body2: preset.body2, body2On: preset.body2On };
+    setPoly(preset.poly);
+    setMode(preset.mode);
+    setFx(preset.fx);
+    setMotionTarget(preset.motionTarget);
+    setMotionRate(preset.motionRate);
+    setActivePreset(preset.name);
+    showToast(`${preset.name.toUpperCase()} LOADED`);
+  }, [setParam, showToast]);
+
+  const loadBuiltInPreset = useCallback((name: string) => {
+    const preset = BUILT_IN_PRESETS.find((item) => item.name === name);
+    if (preset) applyPreset(preset);
+  }, [applyPreset]);
 
   const savePreset = useCallback(() => {
     const state: PresetState = { ...paramsRef.current, exciter, body1, body2, body2On, poly, mode, chorus: String(fx.chorus), delay: String(fx.delay), space: String(fx.space), motionTarget, motionRate };
@@ -506,7 +603,7 @@ export function useSynth() {
       (Object.keys(DEFAULT_PARAMS) as (keyof SynthParams)[]).forEach((key) => { if (typeof state[key] === "number") setParam(key, state[key]!); });
       if (state.exciter) setExciter(state.exciter); if (state.body1) setBody1(state.body1); if (state.body2) setBody2(state.body2); if (state.poly) setPoly(state.poly); if (state.mode) setMode(state.mode); if (typeof state.body2On === "boolean") setBody2On(state.body2On);
       if (state.chorus) setFx((current) => ({ ...current, chorus: Number(state.chorus) })); if (state.delay) setFx((current) => ({ ...current, delay: Number(state.delay) })); if (state.space) setFx((current) => ({ ...current, space: Number(state.space) }));
-      if (state.motionTarget) setMotionTarget(state.motionTarget); if (state.motionRate) setMotionRate(state.motionRate); showToast("PRESET LOADED");
+      if (state.motionTarget) setMotionTarget(state.motionTarget); if (state.motionRate) setMotionRate(state.motionRate); setActivePreset("SAVED PRESET"); showToast("PRESET LOADED");
     } catch { showToast("PRESET COULD NOT LOAD"); }
   }, [setParam, showToast]);
 
@@ -514,8 +611,8 @@ export function useSynth() {
 
   const activeNotes = useMemo(() => new Set(Object.values(activeVoices)), [activeVoices]);
   return {
-    params, started, audioWorkletReady, audioError, voices, midiReady, midiLearn, learnedCC, octave, hold, sustain, body2On, motionOn, motionTarget, motionRate, exciter, body1, body2, poly, mode, fx, activeNotes, toast,
+    params, started, audioWorkletReady, audioError, voices, midiReady, midiLearn, learnedCC, octave, hold, sustain, body2On, motionOn, motionTarget, motionRate, exciter, body1, body2, poly, mode, fx, activeNotes, toast, activePreset, builtInPresets: BUILT_IN_PRESETS,
     startAudio, setParam, setExciter, setBody1, setBody2, setPoly, setMode, setFx, setOctave: (value: number) => setOctave(Math.max(-2, Math.min(2, value))), setBody2On: (value: boolean) => { setBody2On(value); selectionsRef.current.body2On = value; updateVoiceParams(); }, setMotionTarget, setMotionRate,
-    toggleSustain, toggleHold, panic, pointerDown, pointerUp, toggleMotion, randomise, savePreset, loadPreset, armMidiLearn, setMidiLearn,
+    toggleSustain, toggleHold, panic, pointerDown, pointerUp, toggleMotion, randomise, savePreset, loadPreset, loadBuiltInPreset, armMidiLearn, setMidiLearn,
   };
 }

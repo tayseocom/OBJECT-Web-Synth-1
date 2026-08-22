@@ -74,7 +74,16 @@ function Header({ synth }: { synth: ReturnType<typeof useSynth> }) {
     <header className="topbar panel-frame">
       <div className="brand-lockup"><div className="brand-symbol">O</div><div><div className="brand-name">OBJECT</div><div className="brand-sub">WSA CONCEPT / WEB</div></div></div>
       <div className="header-mode"><span className="live-dot" /> PERFORMANCE</div>
-      <button type="button" className="preset-button" data-testid="button-load-preset" onClick={synth.loadPreset}>Glass String Dream <RotateCcw size={13} /></button>
+      <label className="preset-picker">
+        <span className="sr-only">Built-in preset</span>
+        <select data-testid="select-preset" aria-label="Built-in preset" value={synth.activePreset} onChange={(event) => synth.loadBuiltInPreset(event.target.value)}>
+          {synth.builtInPresets.map((preset) => <option key={preset.name} value={preset.name}>{preset.name}</option>)}
+          <option value="SAVED PRESET">SAVED PRESET</option>
+          <option value="MUTATED">MUTATED</option>
+        </select>
+        <ChevronDown size={13} aria-hidden="true" />
+      </label>
+      <button type="button" className="preset-recall" data-testid="button-load-preset" onClick={synth.loadPreset} title="Load your saved local preset"><RotateCcw size={13} /> RECALL</button>
       <div className="header-status">
         <span className={`status-item ${synth.started ? "is-on" : ""}`}><span className="status-led" /> AUDIO</span>
         <span className={`status-item ${synth.midiReady ? "is-on" : ""}`}><span className="status-led" /> MIDI</span>
