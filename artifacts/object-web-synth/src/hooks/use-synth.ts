@@ -99,7 +99,7 @@ export const BUILT_IN_PRESETS: BuiltInPreset[] = [
     name: "Rubber Mallet",
     description: "Short, woody knocks with a playful bounce",
     params: { strike: 0.56, pickup: 0.3, coupling: 0.26, damping: 0.76, tracking: 1, spread: 0.08, edge: 0.12 },
-    exciter: "hammer", body1: "tube", body2: "string", body2On: false, poly: "8", mode: "Mono",
+    exciter: "hammer", body1: "plate", body2: "string", body2On: false, poly: "8", mode: "Mono",
     fx: { chorus: 0.04, delay: 0.12, space: 0.08 }, motionTarget: "strike", motionRate: "0.55",
   },
   {
